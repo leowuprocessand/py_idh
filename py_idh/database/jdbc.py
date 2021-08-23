@@ -1,3 +1,4 @@
+from py_idh import database
 import time
 import re
 import yaml
@@ -17,6 +18,10 @@ import py_idh.container as container
 
 # error handling and logging
 from ..core.logging import error_handler, logging
+
+# import 
+import python_jdbc.sql_generator.sql_snippets as sql_snippets
+import python_jdbc.sql_generator.alter_table as alter_table
 
 def start_background_loop(_loop: asyncio.AbstractEventLoop) -> None:
     asyncio.set_event_loop(_loop)
@@ -76,6 +81,101 @@ class PythonJdbc():
         
         if counter == 120:
             error_handler(f"Could not reach Java Server via websockets", None, self.logging_label)
+
+    # def create_schema(
+    #     self,
+    #     schema_name = None,
+    #     connection_id = None,
+    #     token = None,
+    #     host = None,
+    #     port = None,
+    #     jdbc_token = None,
+    #     connection_data = None):
+
+    #     self.token = token
+
+    #     #TODO: query = ...
+
+    #     task_data = {
+    #         'taskId': str(uuid.uuid4()),
+    #         'command': 'execute',
+    #         'params': {
+    #             'query': query}}
+    #     if connection_id:
+    #         task_data['connectionId'] = connection_id 
+    #     else:
+    #         task_data['connectionData'] = connection_data 
+    #     if host and port:
+    #         task_data.update({'host': host, 'port': port})
+    #     if jdbc_token:
+    #         task_data['jdbc_token'] = jdbc_token
+    #     return self._addTask(task_data)
+
+    def has_table(
+        self,
+        schema_name = None,
+        table_name = None,
+        connection_id = None,
+        token = None,
+        host = None,
+        port = None,
+        jdbc_token = None,
+        connection_data = None):
+
+        self.token = token
+        database_type = connection_data['database']
+        query = sql_snippets.has_table(table=table_name, schema=schema_name)
+
+        task_data = {
+            'taskId': str(uuid.uuid4()),
+            'command': 'execute',
+            'params': {
+                'query': query[database_type],
+                }
+            }
+        if connection_id:
+            task_data['connectionId'] = connection_id 
+        else:
+            task_data['connectionData'] = connection_data 
+        if host and port:
+            task_data.update({'host': host, 'port': port})
+        if jdbc_token:
+            task_data['jdbc_token'] = jdbc_token
+        return self._addTask(task_data)
+
+    def create_table(
+        self,
+        schema_name = None,
+        table_name = None,
+        columns = None,
+        connection_id = None,
+        token = None,
+        host = None,
+        port = None,
+        jdbc_token = None,
+        connection_data = None):
+
+        self.token = token
+        database_type = connection_data['database']
+        query = alter_table.create_table(table=table_name, schema=schema_name, columns=columns)
+
+        task_data = {
+            'taskId': str(uuid.uuid4()),
+            'command': 'execute',
+            'params': {
+                'query': query[database_type],
+                }
+            }
+        if connection_id:
+            task_data['connectionId'] = connection_id 
+        else:
+            task_data['connectionData'] = connection_data 
+        if host and port:
+            task_data.update({'host': host, 'port': port})
+        if jdbc_token:
+            task_data['jdbc_token'] = jdbc_token
+        return self._addTask(task_data)
+
 
     def execute(
         self,
